@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ระบบจองวันลา QA/QC BDP</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
@@ -921,6 +921,18 @@ function buildNav(){
 }
 
 // เปิด/ปิดเมนูผู้ใช้
+// วาง dropdown ใกล้ปุ่ม โดยไม่ให้หลุดจอทั้งซ้าย/ขวา (ใช้ได้ทั้งกระดิ่งที่อยู่ซ้าย และเมนูที่อยู่ขวา)
+function positionDropdown(dd, btn){
+  const r = btn.getBoundingClientRect();
+  const w = dd.offsetWidth || 280;
+  let left = r.right - w;                                  // เริ่มจากจัดขอบขวาให้ตรงปุ่ม
+  left = Math.min(left, window.innerWidth - 10 - w);       // กันล้นขวา
+  left = Math.max(10, left);                               // กันล้นซ้าย
+  dd.style.left  = left + 'px';
+  dd.style.right = 'auto';
+  dd.style.top   = (r.bottom + 8) + 'px';
+}
+
 function toggleUserMenu(){
   const dd = document.getElementById('userMenu');
   const bd = document.getElementById('bellDropdown');
@@ -929,11 +941,7 @@ function toggleUserMenu(){
   dd.classList.toggle('hidden');
   if (willShow){
     const btn = document.getElementById('userMenuBtn');
-    if (btn){
-      const r = btn.getBoundingClientRect();
-      dd.style.top = (r.bottom + 8) + 'px';
-      dd.style.right = Math.max(10, window.innerWidth - r.right) + 'px';   // ยึดขอบขวาของปุ่ม ไม่ใช่ขอบจอ
-    }
+    if (btn) positionDropdown(dd, btn);
   }
 }
 function closeUserMenu(){ const dd = document.getElementById('userMenu'); if (dd) dd.classList.add('hidden'); }
@@ -2331,11 +2339,7 @@ function toggleBell() {
     dd.classList.toggle('hidden');
     if (willShow) {
         const btn = document.getElementById('bellBtn');
-        if (btn){
-            const r = btn.getBoundingClientRect();
-            dd.style.top = (r.bottom + 8) + 'px';
-            dd.style.right = Math.max(10, window.innerWidth - r.right) + 'px';
-        }
+        if (btn) positionDropdown(dd, btn);
         _notifs.forEach(n => n.read = true);   // เปิดดู = อ่านแล้ว
         renderBell();
         maybeAskNotifyPermission();
