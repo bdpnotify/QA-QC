@@ -293,7 +293,7 @@
         .bell-wrap{ position:relative; }
         .bell-badge{ position:absolute; top:-3px; right:-3px; min-width:17px; height:17px; padding:0 4px; border-radius:999px;
             background:var(--red); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; line-height:1; pointer-events:none; }
-        .bell-dropdown{ position:absolute; right:0; top:46px; width:300px; max-width:84vw; background:var(--surface);
+        .bell-dropdown{ position:fixed; right:10px; top:64px; width:320px; max-width:calc(100vw - 20px); background:var(--surface);
             border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); z-index:70; overflow:hidden; animation:popIn .18s ease both; }
         .bell-head{ padding:12px 14px; font-weight:600; font-size:14px; color:var(--text); border-bottom:1px solid var(--border); }
         .bell-perm{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px; font-size:12.5px;
@@ -2253,6 +2253,8 @@ function toggleBell() {
     const willShow = dd.classList.contains('hidden');
     dd.classList.toggle('hidden');
     if (willShow) {
+        const btn = document.getElementById('bellBtn');
+        if (btn) dd.style.top = (btn.getBoundingClientRect().bottom + 8) + 'px';   // วางใต้กระดิ่งเสมอ ไม่หลุดจอ
         _notifs.forEach(n => n.read = true);   // เปิดดู = อ่านแล้ว
         renderBell();
         maybeAskNotifyPermission();
