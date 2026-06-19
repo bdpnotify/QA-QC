@@ -760,6 +760,7 @@
             <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">หัวข้อ</span><span id="det-title" class="text-strong font-medium"></span></div>
             <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">ประเภท</span><span id="det-leaveType" class="text-strong"></span></div>
             <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">สิทธิ์</span><span id="det-bookingType" class="text-strong"></span></div>
+            <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">สถานะ</span><span id="det-status" class="text-strong"></span></div>
             <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">ผู้อนุมัติ</span><span id="det-approver" class="text-strong"></span></div>
             <div class="flex gap-2"><span class="text-muted2 w-20 flex-none">เหตุผล</span><span id="det-reason" class="text-strong"></span></div>
         </div>
@@ -1992,7 +1993,7 @@ function renderCalendar() {
                     start:b.date,
                     backgroundColor:getStatusColor(b.status),
                     borderColor:getStatusColor(b.status),
-                    extendedProps:{leaveType:b.leaveType,bookingType:b.bookingType,approver:b.approver,reason:b.reason,isRealLeave:true}
+                    extendedProps:{leaveType:b.leaveType,bookingType:b.bookingType,status:b.status,approver:b.approver,reason:b.reason,isRealLeave:true}
                 }));
                 successCb([...bookings,...holidays]);
             };
@@ -2011,11 +2012,13 @@ function renderCalendar() {
             if (ev.extendedProps?.isRealLeave) {
                 document.getElementById('det-leaveType').textContent  = ev.extendedProps.leaveType||'-';
                 document.getElementById('det-bookingType').textContent = ev.extendedProps.bookingType||'-';
+                document.getElementById('det-status').innerHTML        = statusBadge(ev.extendedProps.status);
                 document.getElementById('det-approver').textContent   = ev.extendedProps.approver||'-';
                 document.getElementById('det-reason').textContent     = ev.extendedProps.reason||'-';
             } else {
                 document.getElementById('det-leaveType').textContent  = 'วันหยุดโรงงาน';
                 document.getElementById('det-bookingType').textContent = '-';
+                document.getElementById('det-status').innerHTML        = '<span class="badge badge-gray">วันหยุด</span>';
                 document.getElementById('det-approver').textContent   = 'ฝ่ายบุคคล';
                 document.getElementById('det-reason').textContent     = 'วันหยุดประจำปีของบริษัท';
             }
@@ -2154,6 +2157,11 @@ function renderDashboard(name, role) {
 }
 function getStatusColor(s) {
     return s==='รออนุมัติ'?'#f0a500': s==='อนุมัติแล้ว'?'#22a55b': s==='ไม่อนุมัติ'?'#e0524a':'#2563eb';
+}
+function statusBadge(status) {
+    const map = { 'รออนุมัติ':'badge-amber', 'อนุมัติแล้ว':'badge-green', 'ไม่อนุมัติ':'badge-red' };
+    const cls = map[status] || 'badge-gray';
+    return '<span class="badge ' + cls + '">' + escapeHtml(status || '-') + '</span>';
 }
 
 // ============================================================
