@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจองวันลา QA/QC BDP</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="QA/QC วันลา">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script>(function(){try{if(localStorage.getItem('qaqc_theme')==='dark')document.documentElement.classList.add('dark');}catch(e){}})();</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' };</script>
@@ -280,6 +288,24 @@
         ::-webkit-scrollbar{ width:11px; height:11px; }
         ::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:10px; border:3px solid var(--surface); }
         ::-webkit-scrollbar-track{ background:transparent; }
+
+        /* ---------- Notification bell ---------- */
+        .bell-wrap{ position:relative; }
+        .bell-badge{ position:absolute; top:-3px; right:-3px; min-width:17px; height:17px; padding:0 4px; border-radius:999px;
+            background:var(--red); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; line-height:1; pointer-events:none; }
+        .bell-dropdown{ position:absolute; right:0; top:46px; width:300px; max-width:84vw; background:var(--surface);
+            border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); z-index:70; overflow:hidden; animation:popIn .18s ease both; }
+        .bell-head{ padding:12px 14px; font-weight:600; font-size:14px; color:var(--text); border-bottom:1px solid var(--border); }
+        .bell-perm{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px; font-size:12.5px;
+            color:var(--primary-ink); background:var(--primary-soft); }
+        .bell-list{ max-height:340px; overflow-y:auto; }
+        .bell-item{ padding:11px 14px; border-bottom:1px solid var(--border); }
+        .bell-item:last-child{ border-bottom:none; }
+        .bell-item.unread{ background:var(--primary-soft); }
+        .bi-title{ font-size:13px; font-weight:600; color:var(--text); }
+        .bi-body{ font-size:12.5px; color:var(--text-muted); margin-top:1px; }
+        .bi-time{ font-size:11px; color:var(--text-faint); margin-top:3px; }
+        .bell-empty{ padding:24px 14px; text-align:center; color:var(--text-faint); font-size:13px; }
     </style>
 </head>
 <body class="min-h-screen pb-14 overflow-x-hidden">
@@ -335,6 +361,19 @@
 
             <div class="flex items-center gap-2 order-2 lg:order-3 lg:ml-2">
                 <span id="displayUserName" class="userchip"></span>
+                <button onclick="installPWA()" class="iconbtn hidden" title="ติดตั้งแอป" aria-label="ติดตั้งแอป" id="installBtn"></button>
+                <div class="bell-wrap">
+                    <button onclick="toggleBell()" class="iconbtn" title="การแจ้งเตือน" aria-label="การแจ้งเตือน" id="bellBtn"></button>
+                    <span id="bellBadge" class="bell-badge hidden">0</span>
+                    <div id="bellDropdown" class="bell-dropdown hidden">
+                        <div class="bell-head">การแจ้งเตือน</div>
+                        <div id="bellPermRow" class="bell-perm hidden">
+                            <span>เปิดแจ้งเตือนบนเครื่องนี้?</span>
+                            <button onclick="requestNotifyPermission()" class="btn btn-primary" style="padding:4px 10px;font-size:12px">เปิด</button>
+                        </div>
+                        <div id="bellList" class="bell-list"></div>
+                    </div>
+                </div>
                 <button onclick="openChangePasswordModal()" class="iconbtn" title="เปลี่ยนรหัสผ่าน" aria-label="เปลี่ยนรหัสผ่าน"></button>
                 <button onclick="toggleTheme()" class="theme-btn iconbtn" title="สลับโหมดสว่าง/มืด" aria-label="theme"></button>
                 <button onclick="logout()" class="iconbtn" title="ออกจากระบบ" aria-label="ออกจากระบบ" id="logoutBtn"></button>
@@ -796,7 +835,9 @@ const ICON = {
   alert:'<path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   sunrise:'<path d="M12 3v6M8.5 6.5 12 3l3.5 3.5M3 18h18M5.5 14a6.5 6.5 0 0 1 13 0M7 21h10"/>',
-  cal2:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18M8 14h2M14 14h2M8 17.5h2"/>'
+  cal2:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18M8 14h2M14 14h2M8 17.5h2"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.5 21a1.8 1.8 0 0 1-3 0"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>'
 };
 function ic(name, extra){
   return '<svg class="ic'+(extra?' '+extra:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON[name]||'')+'</svg>';
@@ -833,6 +874,10 @@ function buildNav(){
   if (cp) cp.innerHTML = ic('key');
   const lo = document.getElementById('logoutBtn');
   if (lo) lo.innerHTML = ic('logout');
+  const bl = document.getElementById('bellBtn');
+  if (bl) bl.innerHTML = ic('bell');
+  const inb = document.getElementById('installBtn');
+  if (inb) inb.innerHTML = ic('download');
 }
 
 // ============================================================
@@ -989,14 +1034,15 @@ function startVersionPolling() {
 
         ClientCache.checkServerVersion(hasNew => {
             if (!hasNew) return;
-            ClientCache.invalidate();
-            refreshBookingsFromServer(() => {
+            api('getAllBookings').then(bookings => {
+                ClientCache.updateBookings(bookings);
+                computeAndNotify(bookings, true);   // ★ ตรวจการเปลี่ยนแปลง → เด้งแจ้งเตือน
                 applyFilters();
                 applyMyFilters();
                 if (calendarInstance) calendarInstance.refetchEvents();
                 if (currentUser) renderDashboard(currentUser.name, currentUser.role);
                 showAutoRefreshIndicator();
-            });
+            }).catch(() => {});
         });
     }, 30000);
 }
@@ -1135,6 +1181,9 @@ function loadInitialData(callback) {
 
             ClientCache.set(data.bookings, data.employees, data.holidays);
             renderEmployeeList(data.employees);
+            computeAndNotify(data.bookings, false);   // ตั้ง baseline ตอนเข้าระบบ (ไม่เด้งย้อนหลัง)
+            renderBell();
+            maybeAskNotifyPermission();
 
             applyFilters();
             applyMyFilters();
@@ -1179,6 +1228,9 @@ function logout() {
     currentUser = null;
     ClientCache.invalidate();
     localStorage.removeItem('qaqc_token');
+    _notifs = [];
+    _notifySnapshot = null;
+    renderBell();
     resetToLoginUI();
 }
 
@@ -1388,6 +1440,7 @@ function refreshBookingsFromServer(callback) {
     api('getAllBookings')
         .then(bookings => {
             ClientCache.updateBookings(bookings);
+            computeAndNotify(bookings, false);   // อัปเดต snapshot เงียบๆ ไม่เด้ง (กันแจ้งเตือนซ้ำจาก action ตัวเอง)
             if (callback) callback();
         })
         .catch(err => {
@@ -2102,6 +2155,171 @@ function renderDashboard(name, role) {
 function getStatusColor(s) {
     return s==='รออนุมัติ'?'#f0a500': s==='อนุมัติแล้ว'?'#22a55b': s==='ไม่อนุมัติ'?'#e0524a':'#2563eb';
 }
+
+// ============================================================
+// Notifications (A: in-app bell/toast + B: OS notification)
+// ============================================================
+let _notifySnapshot = null;   // map id -> status ที่ใช้เทียบหาการเปลี่ยนแปลง
+let _notifs = [];             // รายการแจ้งเตือนในแอป [{title, body, time, read}]
+
+function _snapshotOf(bookings) {
+    const m = {};
+    (bookings || []).forEach(b => { m[b.id] = b.status; });
+    return m;
+}
+
+// เทียบ bookings กับ snapshot เดิม → ถ้า fire=true เด้งแจ้งเตือน, แล้วอัปเดต snapshot เสมอ
+function computeAndNotify(bookings, fire) {
+    const cur = _snapshotOf(bookings);
+    if (_notifySnapshot === null || !fire || !currentUser) { _notifySnapshot = cur; return; }
+
+    const prev = _notifySnapshot;
+    const role = currentUser.role;
+    const myName = currentUser.name.trim();
+    const msgs = [];
+
+    // Admin/Dev: มีคำขอใหม่ที่ยัง "รออนุมัติ"
+    if (role === 'admin' || role === 'developer') {
+        bookings.forEach(b => {
+            if (b.status === 'รออนุมัติ' && prev[b.id] !== 'รออนุมัติ') {
+                msgs.push({ title: 'มีคำขอลาใหม่', body: `${b.name} · ${b.date} · ${b.shift}`, tag: 'req_' + b.id });
+            }
+        });
+    }
+    // User/Dev: คำขอของตัวเองถูกอนุมัติ/ปฏิเสธ
+    if (role === 'user' || role === 'developer') {
+        bookings.forEach(b => {
+            if (b.name.trim() !== myName) return;
+            if (prev[b.id] === 'รออนุมัติ' && b.status === 'อนุมัติแล้ว') {
+                msgs.push({ title: 'คำขอได้รับการอนุมัติ', body: `${b.date} · ${b.shift}`, tag: 'dec_' + b.id });
+            } else if (prev[b.id] === 'รออนุมัติ' && b.status === 'ไม่อนุมัติ') {
+                msgs.push({ title: 'คำขอถูกปฏิเสธ', body: `${b.date} · ${b.shift}${b.reason ? (' · ' + b.reason) : ''}`, tag: 'dec_' + b.id });
+            }
+        });
+    }
+
+    _notifySnapshot = cur;
+    if (msgs.length) deliverNotifications(msgs);
+}
+
+function deliverNotifications(msgs) {
+    const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    msgs.forEach(m => _notifs.unshift({ title: m.title, body: m.body, time: now, read: false }));
+    if (_notifs.length > 30) _notifs.length = 30;
+    renderBell();
+
+    // toast (in-app) — โชว์อันแรกพอ
+    showToast(msgs[0].title + ': ' + msgs[0].body);
+
+    // OS notification — เด้งเฉพาะตอนไม่ได้โฟกัสแอปอยู่ (กันรบกวนซ้ำ)
+    if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        msgs.forEach(m => {
+            try {
+                const n = new Notification(m.title, { body: m.body, tag: m.tag, icon: 'icon-192.png', badge: 'icon-192.png' });
+                n.onclick = () => { window.focus(); n.close(); };
+            } catch (e) {}
+        });
+    }
+}
+
+function renderBell() {
+    const unread = _notifs.filter(n => !n.read).length;
+    const badge = document.getElementById('bellBadge');
+    if (badge) {
+        if (unread > 0) { badge.textContent = unread > 9 ? '9+' : unread; badge.classList.remove('hidden'); }
+        else badge.classList.add('hidden');
+    }
+    const list = document.getElementById('bellList');
+    if (!list) return;
+    if (!_notifs.length) { list.innerHTML = '<div class="bell-empty">ยังไม่มีการแจ้งเตือน</div>'; return; }
+    list.innerHTML = _notifs.map(n =>
+        `<div class="bell-item${n.read ? '' : ' unread'}">
+            <div class="bi-title">${escapeHtml(n.title)}</div>
+            <div class="bi-body">${escapeHtml(n.body)}</div>
+            <div class="bi-time">${escapeHtml(n.time)}</div>
+        </div>`).join('');
+}
+
+function toggleBell() {
+    const dd = document.getElementById('bellDropdown');
+    const willShow = dd.classList.contains('hidden');
+    dd.classList.toggle('hidden');
+    if (willShow) {
+        _notifs.forEach(n => n.read = true);   // เปิดดู = อ่านแล้ว
+        renderBell();
+        maybeAskNotifyPermission();
+    }
+}
+
+function maybeAskNotifyPermission() {
+    const row = document.getElementById('bellPermRow');
+    if (!row) return;
+    if ('Notification' in window && Notification.permission === 'default') row.classList.remove('hidden');
+    else row.classList.add('hidden');
+}
+
+function requestNotifyPermission() {
+    if (!('Notification' in window)) { showToast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน', 'error'); return; }
+    Notification.requestPermission().then(p => {
+        maybeAskNotifyPermission();
+        if (p === 'granted') showToast('เปิดการแจ้งเตือนบนเครื่องแล้ว');
+        else if (p === 'denied') showToast('การแจ้งเตือนถูกปิดไว้ (เปลี่ยนได้ในตั้งค่าเบราว์เซอร์)', 'error');
+    });
+}
+
+// ปิด dropdown เมื่อคลิกข้างนอก
+document.addEventListener('click', e => {
+    if (!e.target.closest('.bell-wrap')) {
+        const dd = document.getElementById('bellDropdown');
+        if (dd && !dd.classList.contains('hidden')) dd.classList.add('hidden');
+    }
+});
+
+// ============================================================
+// PWA: install prompt + service worker
+// ============================================================
+let _deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    const b = document.getElementById('installBtn');
+    if (b) b.classList.remove('hidden');
+});
+
+function installPWA() {
+    if (_deferredPrompt) {
+        _deferredPrompt.prompt();
+        _deferredPrompt.userChoice.finally(() => {
+            _deferredPrompt = null;
+            const b = document.getElementById('installBtn');
+            if (b) b.classList.add('hidden');
+        });
+    } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        showToast('ติดตั้งบน iPhone: กดปุ่มแชร์ → "เพิ่มลงในหน้าจอโฮม"');
+    } else {
+        showToast('เปิดเมนูเบราว์เซอร์ → "ติดตั้งแอป" เพื่อเพิ่มลงเครื่อง');
+    }
+}
+
+window.addEventListener('appinstalled', () => {
+    const b = document.getElementById('installBtn');
+    if (b) b.classList.add('hidden');
+    showToast('ติดตั้งแอปเรียบร้อยแล้ว!');
+});
+
+window.addEventListener('load', () => {
+    // ลงทะเบียน service worker (จำเป็นสำหรับ PWA + ใช้งาน offline launch)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    // iOS Safari ไม่มี beforeinstallprompt → โชว์ปุ่มไว้เป็นทางลัดบอกวิธีติดตั้ง
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) {
+        const b = document.getElementById('installBtn');
+        if (b) b.classList.remove('hidden');
+    }
+});
 </script>
 </body>
 </html>
