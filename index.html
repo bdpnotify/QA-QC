@@ -134,7 +134,7 @@
         .act-delete:hover{ background:var(--red); color:#fff; border-color:transparent; }
 
         /* ---------- Badges ---------- */
-        .badge{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:500; border:1px solid transparent; line-height:1.5; }
+        .badge{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:500; border:1px solid transparent; line-height:1.5; white-space:nowrap; }
         .badge .ic{ width:13px; height:13px; }
         .badge strong{ font-weight:700; }
         .badge-gray{ background:var(--surface-2); color:var(--text-muted); border-color:var(--border); }
@@ -312,6 +312,7 @@
 
         /* ---------- User menu ---------- */
         .userchip{ font-family:inherit; cursor:pointer; }
+        #displayUserName{ display:inline-flex; align-items:center; gap:8px; }
         .menu-wrap{ position:relative; }
         .menu-dropdown{ position:fixed; right:10px; top:64px; width:232px; max-width:calc(100vw - 20px);
             background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg);
@@ -928,7 +929,11 @@ function toggleUserMenu(){
   dd.classList.toggle('hidden');
   if (willShow){
     const btn = document.getElementById('userMenuBtn');
-    if (btn) dd.style.top = (btn.getBoundingClientRect().bottom + 8) + 'px';
+    if (btn){
+      const r = btn.getBoundingClientRect();
+      dd.style.top = (r.bottom + 8) + 'px';
+      dd.style.right = Math.max(10, window.innerWidth - r.right) + 'px';   // ยึดขอบขวาของปุ่ม ไม่ใช่ขอบจอ
+    }
   }
 }
 function closeUserMenu(){ const dd = document.getElementById('userMenu'); if (dd) dd.classList.add('hidden'); }
@@ -1677,7 +1682,7 @@ function displayBookings(bookings) {
             <td class="cell-name" data-label="ชื่อ">${safeName}</td>
             <td data-label="ประเภท">${safeLT}</td>
             <td data-label="สิทธิ์"><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
-            <td class="${sc}" data-label="สถานะ">${escapeHtml(b.status)}</td>
+            <td class="${sc}" data-label="สถานะ">${statusBadge(b.status)}</td>
             <td data-label="ผู้อนุมัติ">${escapeHtml(b.approver||'-')}</td>
             <td class="max-w-xs truncate" data-label="เหตุผล" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
             <td class="dt-actions" data-label="จัดการ">
@@ -1730,7 +1735,7 @@ function displayMyBookings(bookings) {
             <td data-label="กะ">${safeShift}</td>
             <td data-label="ประเภท">${safeLT}</td>
             <td data-label="สิทธิ์"><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
-            <td class="${sc}" data-label="สถานะ">${escapeHtml(b.status)}</td>
+            <td class="${sc}" data-label="สถานะ">${statusBadge(b.status)}</td>
             <td data-label="ผู้อนุมัติ">${escapeHtml(b.approver||'-')}</td>
             <td class="max-w-xs truncate" data-label="เหตุผล" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
             <td class="text-center dt-actions" data-label="จัดการ">${btns}</td>
@@ -2326,7 +2331,11 @@ function toggleBell() {
     dd.classList.toggle('hidden');
     if (willShow) {
         const btn = document.getElementById('bellBtn');
-        if (btn) dd.style.top = (btn.getBoundingClientRect().bottom + 8) + 'px';   // วางใต้กระดิ่งเสมอ ไม่หลุดจอ
+        if (btn){
+            const r = btn.getBoundingClientRect();
+            dd.style.top = (r.bottom + 8) + 'px';
+            dd.style.right = Math.max(10, window.innerWidth - r.right) + 'px';
+        }
         _notifs.forEach(n => n.read = true);   // เปิดดู = อ่านแล้ว
         renderBell();
         maybeAskNotifyPermission();
