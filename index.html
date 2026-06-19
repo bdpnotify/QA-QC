@@ -310,6 +310,20 @@
         /* ---------- Disabled button ---------- */
         .btn:disabled{ opacity:.5; cursor:not-allowed; }
 
+        /* ---------- User menu ---------- */
+        .userchip{ font-family:inherit; cursor:pointer; }
+        .menu-wrap{ position:relative; }
+        .menu-dropdown{ position:fixed; right:10px; top:64px; width:232px; max-width:calc(100vw - 20px);
+            background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg);
+            z-index:70; padding:6px; animation:popIn .18s ease both; }
+        .menu-item{ display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border-radius:10px;
+            background:transparent; border:none; cursor:pointer; font:inherit; font-size:14px; color:var(--text); text-align:left; transition:background .12s; }
+        .menu-item:hover{ background:var(--surface-2); }
+        .menu-item .ic{ width:18px; height:18px; color:var(--text-muted); flex:none; }
+        .menu-item.menu-danger{ color:var(--red); }
+        .menu-item.menu-danger .ic{ color:var(--red); }
+        .menu-sep{ height:1px; background:var(--border); margin:5px 8px; }
+
         /* ---------- Mobile: ตารางข้อมูล → การ์ดต่อรายการ ---------- */
         @media (max-width:640px){
             .tablewrap{ border:none; overflow:visible; }
@@ -383,8 +397,6 @@
             </nav>
 
             <div class="flex items-center gap-2 order-2 lg:order-3 lg:ml-2">
-                <span id="displayUserName" class="userchip"></span>
-                <button onclick="installPWA()" class="iconbtn hidden" title="ติดตั้งแอป" aria-label="ติดตั้งแอป" id="installBtn"></button>
                 <div class="bell-wrap">
                     <button onclick="toggleBell()" class="iconbtn" title="การแจ้งเตือน" aria-label="การแจ้งเตือน" id="bellBtn"></button>
                     <span id="bellBadge" class="bell-badge hidden">0</span>
@@ -397,9 +409,19 @@
                         <div id="bellList" class="bell-list"></div>
                     </div>
                 </div>
-                <button onclick="openChangePasswordModal()" class="iconbtn" title="เปลี่ยนรหัสผ่าน" aria-label="เปลี่ยนรหัสผ่าน"></button>
-                <button onclick="toggleTheme()" class="theme-btn iconbtn" title="สลับโหมดสว่าง/มืด" aria-label="theme"></button>
-                <button onclick="logout()" class="iconbtn" title="ออกจากระบบ" aria-label="ออกจากระบบ" id="logoutBtn"></button>
+                <div class="menu-wrap">
+                    <button onclick="toggleUserMenu()" class="userchip" id="userMenuBtn" aria-haspopup="true" aria-label="เมนูผู้ใช้">
+                        <span id="displayUserName"></span>
+                        <svg class="ic" style="width:14px;height:14px;opacity:.55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div id="userMenu" class="menu-dropdown hidden">
+                        <button onclick="installPWA(); closeUserMenu()" id="menuInstall" class="menu-item hidden"></button>
+                        <button onclick="toggleTheme()" id="menuTheme" class="menu-item"></button>
+                        <button onclick="openChangePasswordModal(); closeUserMenu()" id="menuChangePass" class="menu-item"></button>
+                        <div class="menu-sep"></div>
+                        <button onclick="logout()" id="menuLogout" class="menu-item menu-danger"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -448,7 +470,6 @@
                             <span id="ss-backup" class="badge badge-gray">สำรอง: —</span>
                         </div>
                         <p id="ss-loading" class="text-xs text-faint2 mt-2 hidden">กำลังตรวจสอบ...</p>
-                        <p id="ss-source" class="text-xs text-faint2 mt-1"></p>
                     </div>
 
                     <div>
@@ -502,7 +523,6 @@
                         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.4 2.4 4.6-5"/></svg>
                         สรุปรายการจองทั้งหมด
                     </h3>
-                    <span id="cacheAgeLabel" class="text-xs text-faint2 hidden">ข้อมูล ณ: <span id="cacheAgeText"></span></span>
                     <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
                         <select id="monthFilter" onchange="applyFilters()" class="input" style="width:auto;padding:8px 11px;font-size:13px;">
                             <option value="current_and_next">เดือนนี้ + เดือนหน้า</option>
@@ -513,10 +533,6 @@
                             <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
                         </select>
                         <select id="yearFilter" onchange="applyFilters()" class="input" style="width:auto;padding:8px 11px;font-size:13px;"></select>
-                        <button onclick="forceRefreshFromServer()" class="btn btn-soft" style="padding:8px 13px;font-size:13px;">
-                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
-                            รีเฟรชจาก Server
-                        </button>
                     </div>
                 </div>
                 <div id="bookingSummary" class="flex flex-wrap gap-2 mb-3"></div>
@@ -554,10 +570,6 @@
                             <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option>
                             <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
                         </select>
-                        <button onclick="forceRefreshFromServer()" class="btn btn-soft" style="padding:8px 13px;font-size:13px;">
-                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
-                            รีเฟรช
-                        </button>
                     </div>
                 </div>
                 <div class="note note-blue mb-3">
@@ -878,6 +890,8 @@ function toggleTheme(){
 function updateThemeIcon(){
   const dark = document.documentElement.classList.contains('dark');
   document.querySelectorAll('.theme-btn').forEach(b => b.innerHTML = dark ? ic('sun') : ic('moon'));
+  const mt = document.getElementById('menuTheme');
+  if (mt) mt.innerHTML = (dark ? ic('sun') : ic('moon')) + '<span>' + (dark ? 'โหมดสว่าง' : 'โหมดมืด') + '</span>';
 }
 
 // Build nav button labels (icon + text) once
@@ -888,21 +902,36 @@ function buildNav(){
     'btn-calendar-tab':  [ic('calendar'),'ปฏิทิน'],
     'btn-table-tab':     [ic('approve'),'อนุมัติ'],
     'btn-mylist-tab':    [ic('list'),'รายการของฉัน'],
-    'btn-log-tab':       [ic('activity'),'Activity Log']
+    'btn-log-tab':       [ic('activity'),'ประวัติการใช้งาน']
   };
   Object.entries(map).forEach(([id, v]) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = v[0] + '<span>' + v[1] + '</span>';
   });
-  const cp = document.querySelector('[onclick="openChangePasswordModal()"]');
-  if (cp) cp.innerHTML = ic('key');
-  const lo = document.getElementById('logoutBtn');
-  if (lo) lo.innerHTML = ic('logout');
   const bl = document.getElementById('bellBtn');
   if (bl) bl.innerHTML = ic('bell');
-  const inb = document.getElementById('installBtn');
-  if (inb) inb.innerHTML = ic('download');
+  const mi = document.getElementById('menuInstall');
+  if (mi) mi.innerHTML = ic('download') + '<span>ติดตั้งแอป</span>';
+  const mc = document.getElementById('menuChangePass');
+  if (mc) mc.innerHTML = ic('key') + '<span>เปลี่ยนรหัสผ่าน</span>';
+  const ml = document.getElementById('menuLogout');
+  if (ml) ml.innerHTML = ic('logout') + '<span>ออกจากระบบ</span>';
+  updateThemeIcon();
 }
+
+// เปิด/ปิดเมนูผู้ใช้
+function toggleUserMenu(){
+  const dd = document.getElementById('userMenu');
+  const bd = document.getElementById('bellDropdown');
+  if (bd) bd.classList.add('hidden');
+  const willShow = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden');
+  if (willShow){
+    const btn = document.getElementById('userMenuBtn');
+    if (btn) dd.style.top = (btn.getBoundingClientRect().bottom + 8) + 'px';
+  }
+}
+function closeUserMenu(){ const dd = document.getElementById('userMenu'); if (dd) dd.classList.add('hidden'); }
 
 // ============================================================
 // Client-side Cache
@@ -1248,6 +1277,7 @@ function resetToLoginUI() {
 }
 
 function logout() {
+    closeUserMenu();
     api('logout').catch(() => {});   // บอก server ลบ session (ไม่ต้องรอผล)
     currentUser = null;
     ClientCache.invalidate();
@@ -1637,10 +1667,10 @@ function displayBookings(bookings) {
         const approveBtns = b.status==='รออนุมัติ' ? `
             <button data-approve-id="${safeId}" data-approve="true"
                 onclick="quickApprove('${safeId}', true, this)"
-                class="act act-approve" title="อนุมัติ" aria-label="อนุมัติ">${ic('check')}</button>
+                class="act act-approve" title="อนุมัติ">${ic('check')}<span>อนุมัติ</span></button>
             <button data-approve-id="${safeId}" data-approve="false"
                 onclick="quickApprove('${safeId}', false, this)"
-                class="act act-reject" title="ปฏิเสธ" aria-label="ปฏิเสธ">${ic('x')}</button>` : '';
+                class="act act-reject" title="ปฏิเสธ">${ic('x')}<span>ปฏิเสธ</span></button>` : '';
         return `<tr>
             <td class="whitespace-nowrap" data-label="วันที่ลา">${safeDate}</td>
             <td data-label="กะ">${safeShift}</td>
@@ -1655,10 +1685,10 @@ function displayBookings(bookings) {
                     ${approveBtns}
                     <button data-id="${safeId}" data-date="${safeDate}" data-shift="${safeShift}" data-name="${safeName}" data-lt="${safeLT}" data-bt="${safeBT}"
                         onclick="openEditModalFromData(this)"
-                        class="act act-edit" title="แก้ไข" aria-label="แก้ไข">${ic('pencil')}</button>
+                        class="act act-edit" title="แก้ไข">${ic('pencil')}<span>แก้ไข</span></button>
                     <button data-id="${safeId}" data-name="${safeName}" data-date="${safeDate}"
                         onclick="openDeleteModalFromData(this)"
-                        class="act act-delete" title="ลบ" aria-label="ลบ">${ic('trash')}</button>
+                        class="act act-delete" title="ลบ">${ic('trash')}<span>ลบ</span></button>
                 </div>
             </td>
         </tr>`;
@@ -2325,6 +2355,10 @@ document.addEventListener('click', e => {
         const dd = document.getElementById('bellDropdown');
         if (dd && !dd.classList.contains('hidden')) dd.classList.add('hidden');
     }
+    if (!e.target.closest('.menu-wrap')) {
+        const um = document.getElementById('userMenu');
+        if (um && !um.classList.contains('hidden')) um.classList.add('hidden');
+    }
 });
 
 // ============================================================
@@ -2335,7 +2369,7 @@ let _deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     _deferredPrompt = e;
-    const b = document.getElementById('installBtn');
+    const b = document.getElementById('menuInstall');
     if (b) b.classList.remove('hidden');
 });
 
@@ -2344,7 +2378,7 @@ function installPWA() {
         _deferredPrompt.prompt();
         _deferredPrompt.userChoice.finally(() => {
             _deferredPrompt = null;
-            const b = document.getElementById('installBtn');
+            const b = document.getElementById('menuInstall');
             if (b) b.classList.add('hidden');
         });
     } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
@@ -2355,7 +2389,7 @@ function installPWA() {
 }
 
 window.addEventListener('appinstalled', () => {
-    const b = document.getElementById('installBtn');
+    const b = document.getElementById('menuInstall');
     if (b) b.classList.add('hidden');
     showToast('ติดตั้งแอปเรียบร้อยแล้ว!');
 });
@@ -2368,7 +2402,7 @@ window.addEventListener('load', () => {
     // iOS Safari ไม่มี beforeinstallprompt → โชว์ปุ่มไว้เป็นทางลัดบอกวิธีติดตั้ง
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) {
-        const b = document.getElementById('installBtn');
+        const b = document.getElementById('menuInstall');
         if (b) b.classList.remove('hidden');
     }
 });
