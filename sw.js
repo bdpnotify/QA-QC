@@ -3,7 +3,7 @@
  * ไม่ยุ่งกับ API (POST ไป GAS) — ปล่อยให้วิ่ง network ตามปกติเสมอ
  * เวลาแก้ไฟล์แล้วอยากให้ผู้ใช้ได้ของใหม่ ให้เปลี่ยนเลข CACHE (เช่น v1 -> v2)
  */
-const CACHE = 'qaqc-v5';
+const CACHE = 'qaqc-v6';
 const SHELL = [
   './',
   './index.html',
