@@ -306,6 +306,29 @@
         .bi-body{ font-size:12.5px; color:var(--text-muted); margin-top:1px; }
         .bi-time{ font-size:11px; color:var(--text-faint); margin-top:3px; }
         .bell-empty{ padding:24px 14px; text-align:center; color:var(--text-faint); font-size:13px; }
+
+        /* ---------- Disabled button ---------- */
+        .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+        /* ---------- Mobile: ตารางข้อมูล → การ์ดต่อรายการ ---------- */
+        @media (max-width:640px){
+            .tablewrap{ border:none; overflow:visible; }
+            table.dt{ font-size:14px; }
+            table.dt thead{ display:none; }
+            table.dt tbody, table.dt tr, table.dt td{ display:block; width:100%; }
+            table.dt tr{ border:1px solid var(--border); border-radius:13px; background:var(--surface);
+                box-shadow:var(--shadow-sm); margin-bottom:11px; padding:4px 2px; }
+            table.dt tbody tr:hover{ background:var(--surface); }
+            table.dt td{ border:none; padding:8px 14px; display:flex; align-items:center; gap:12px;
+                justify-content:space-between; text-align:right; max-width:none !important; white-space:normal !important; }
+            table.dt td::before{ content:attr(data-label); flex:none; text-align:left;
+                font-size:12px; font-weight:600; color:var(--text-muted); }
+            table.dt td.dt-actions{ justify-content:flex-end; border-top:1px solid var(--border); margin-top:2px; padding-top:10px; }
+            table.dt td.dt-actions::before{ margin-right:auto; }
+            /* แถว empty / "ไม่มีรายการ" (ใช้ colspan) ไม่ต้องมี label */
+            table.dt td[colspan]{ justify-content:center; text-align:center; }
+            table.dt td[colspan]::before{ content:none; }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-14 overflow-x-hidden">
@@ -444,7 +467,7 @@
                     </div>
                     <div>
                         <label class="field-label">ลำดับสิทธิ์การจอง</label>
-                        <select id="bookingType" required class="input">
+                        <select id="bookingType" required onchange="checkShiftAvailability()" class="input">
                             <option value="หลัก">ผู้จองหลัก</option>
                             <option value="สำรอง">ผู้จองสำรอง</option>
                         </select>
@@ -1463,7 +1486,7 @@ function checkShiftAvailability() {
     const box      = document.getElementById('shiftStatusBox');
     const srcEl    = document.getElementById('ss-source');
 
-    if (!dateVal || !shiftVal) { box.classList.add('hidden'); return; }
+    if (!dateVal || !shiftVal) { box.classList.add('hidden'); setSubmitFull(false); return; }
     box.classList.remove('hidden');
 
     if (ClientCache.isValid()) {
@@ -1487,8 +1510,22 @@ function checkShiftAvailability() {
             .catch(() => {
                 document.getElementById('ss-loading').classList.add('hidden');
                 box.classList.add('hidden');
+                setSubmitFull(false);
             });
     }, 600);
+}
+
+// ปิด/เปิดปุ่มส่งตามว่าสิทธิ์ที่เลือกเต็มหรือไม่
+function setSubmitFull(isFull) {
+    const btn = document.getElementById('submitBtn');
+    if (!btn) return;
+    if (isFull) {
+        btn.disabled = true;
+        btn.textContent = 'สิทธิ์นี้มีผู้จองแล้ว';
+    } else {
+        btn.disabled = false;
+        btn.textContent = 'บันทึกส่งคำขอจองลา';
+    }
 }
 
 function updateShiftUI(status, shiftVal) {
@@ -1511,6 +1548,11 @@ function updateShiftUI(status, shiftVal) {
         backupEl.innerHTML = ic('check') + ' สำรอง: ว่าง';
         backupEl.className = 'badge badge-green';
     }
+
+    // ปิดปุ่มส่งถ้า "สิทธิ์ที่เลือกอยู่ตอนนี้" เต็ม
+    const btVal   = document.getElementById('bookingType').value;
+    const selKey  = `${shiftVal}_${btVal}`;
+    setSubmitFull(!!(status[selKey] && status[selKey].full));
 }
 
 // ============================================================
@@ -1600,15 +1642,15 @@ function displayBookings(bookings) {
                 onclick="quickApprove('${safeId}', false, this)"
                 class="act act-reject" title="ปฏิเสธ" aria-label="ปฏิเสธ">${ic('x')}</button>` : '';
         return `<tr>
-            <td class="whitespace-nowrap">${safeDate}</td>
-            <td>${safeShift}</td>
-            <td class="cell-name">${safeName}</td>
-            <td>${safeLT}</td>
-            <td><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
-            <td class="${sc}">${escapeHtml(b.status)}</td>
-            <td>${escapeHtml(b.approver||'-')}</td>
-            <td class="max-w-xs truncate" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
-            <td>
+            <td class="whitespace-nowrap" data-label="วันที่ลา">${safeDate}</td>
+            <td data-label="กะ">${safeShift}</td>
+            <td class="cell-name" data-label="ชื่อ">${safeName}</td>
+            <td data-label="ประเภท">${safeLT}</td>
+            <td data-label="สิทธิ์"><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
+            <td class="${sc}" data-label="สถานะ">${escapeHtml(b.status)}</td>
+            <td data-label="ผู้อนุมัติ">${escapeHtml(b.approver||'-')}</td>
+            <td class="max-w-xs truncate" data-label="เหตุผล" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
+            <td class="dt-actions" data-label="จัดการ">
                 <div class="flex flex-wrap gap-1 justify-center">
                     ${approveBtns}
                     <button data-id="${safeId}" data-date="${safeDate}" data-shift="${safeShift}" data-name="${safeName}" data-lt="${safeLT}" data-bt="${safeBT}"
@@ -1654,14 +1696,14 @@ function displayMyBookings(bookings) {
                     class="act act-delete">${ic('trash')}<span>ลบ</span></button>
             </div>` : `<span class="text-xs text-faint2">ดำเนินการแล้ว</span>`;
         return `<tr>
-            <td class="whitespace-nowrap">${safeDate}</td>
-            <td>${safeShift}</td>
-            <td>${safeLT}</td>
-            <td><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
-            <td class="${sc}">${escapeHtml(b.status)}</td>
-            <td>${escapeHtml(b.approver||'-')}</td>
-            <td class="max-w-xs truncate" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
-            <td class="text-center">${btns}</td>
+            <td class="whitespace-nowrap" data-label="วันที่ลา">${safeDate}</td>
+            <td data-label="กะ">${safeShift}</td>
+            <td data-label="ประเภท">${safeLT}</td>
+            <td data-label="สิทธิ์"><span class="badge ${b.bookingType==='หลัก'?'badge-blue':'badge-purple'}">${safeBT}</span></td>
+            <td class="${sc}" data-label="สถานะ">${escapeHtml(b.status)}</td>
+            <td data-label="ผู้อนุมัติ">${escapeHtml(b.approver||'-')}</td>
+            <td class="max-w-xs truncate" data-label="เหตุผล" title="${escapeHtml(b.reason||'')}">${escapeHtml(b.reason||'-')}</td>
+            <td class="text-center dt-actions" data-label="จัดการ">${btns}</td>
         </tr>`;
     }).join('');
 }
@@ -1713,14 +1755,14 @@ function filterLogDisplay() {
             ? '<span class="badge badge-gray">User</span>'
             : `<span class="text-faint2 text-xs">${escapeHtml(l.role)}</span>`;
         return `<tr>
-            <td class="whitespace-nowrap text-faint2">${escapeHtml(l.time)}</td>
-            <td class="cell-name">${escapeHtml(l.actor)}</td>
-            <td>${roleLabel}</td>
-            <td><span class="badge ${cls}">${escapeHtml(l.action)}</span></td>
-            <td class="max-w-xs truncate" title="${escapeHtml(l.detail)}">${escapeHtml(l.detail||'-')}</td>
-            <td class="whitespace-nowrap">${escapeHtml(l.bookingDate||'-')}</td>
-            <td>${escapeHtml(l.shift||'-')}</td>
-            <td>${escapeHtml(l.targetName||'-')}</td>
+            <td class="whitespace-nowrap text-faint2" data-label="เวลา">${escapeHtml(l.time)}</td>
+            <td class="cell-name" data-label="ผู้ดำเนินการ">${escapeHtml(l.actor)}</td>
+            <td data-label="สิทธิ์">${roleLabel}</td>
+            <td data-label="การกระทำ"><span class="badge ${cls}">${escapeHtml(l.action)}</span></td>
+            <td class="max-w-xs truncate" data-label="รายละเอียด" title="${escapeHtml(l.detail)}">${escapeHtml(l.detail||'-')}</td>
+            <td class="whitespace-nowrap" data-label="วันที่ลา">${escapeHtml(l.bookingDate||'-')}</td>
+            <td data-label="กะ">${escapeHtml(l.shift||'-')}</td>
+            <td data-label="ชื่อผู้ลา">${escapeHtml(l.targetName||'-')}</td>
         </tr>`;
     }).join('');
 }
@@ -2126,10 +2168,10 @@ function renderDashboard(name, role) {
         } else {
             upcoming.forEach(function(b) {
                 html += '<tr>';
-                html += '<td class="cell-name">' + escapeHtml(b.name) + '</td>';
-                html += '<td>' + escapeHtml(b.date) + '</td>';
-                html += '<td>' + escapeHtml(b.shift) + '</td>';
-                html += '<td>' + escapeHtml(b.leaveType) + '</td>';
+                html += '<td class="cell-name" data-label="ชื่อ">' + escapeHtml(b.name) + '</td>';
+                html += '<td data-label="วันที่">' + escapeHtml(b.date) + '</td>';
+                html += '<td data-label="กะ">' + escapeHtml(b.shift) + '</td>';
+                html += '<td data-label="ประเภท">' + escapeHtml(b.leaveType) + '</td>';
                 html += '</tr>';
             });
         }
